@@ -6,15 +6,15 @@ import java.util.Scanner
 
 fun inputEmployeeDetails(scanner: Scanner, manager: EmployeeManager) {
     print("Enter First Name: ")
-    val fn = scanner.nextLine().trim()
-    if (fn.isEmpty()) {
+    val firstname = scanner.nextLine().trim()
+    if (firstname.isEmpty()) {
         println("First name cannot be empty.")
         return
     }
-
+    //error validation not to be done here
     print("Enter Last Name: ")
-    val ln = scanner.nextLine().trim()
-    if (ln.isEmpty()) {
+    val lastname = scanner.nextLine().trim()
+    if (lastname.isEmpty()) {
         println("Last name cannot be empty.")
         return
     }
@@ -31,8 +31,8 @@ fun inputEmployeeDetails(scanner: Scanner, manager: EmployeeManager) {
     println("Choose Department:")
     Department.entries.forEachIndexed { i, v -> println("${i + 1}. $v") }
     val dIdx = scanner.nextLine().trim().toIntOrNull()?.minus(1) ?: -1
-    val dept = Department.entries.getOrNull(dIdx)
-    if (dept == null) {
+    val department = Department.entries.getOrNull(dIdx)
+    if (department == null) {
         println("Invalid department.")
         return
     }
@@ -40,7 +40,7 @@ fun inputEmployeeDetails(scanner: Scanner, manager: EmployeeManager) {
     print("Enter ReportingTo ID (or 0): ")
     val reportingTo = scanner.nextLine().trim()
 
-    println(manager.addEmployee(fn, ln, role, dept, reportingTo))
+    println(manager.addEmployee(firstname, lastname, role, department, reportingTo))
 }
 
 fun handleCheckIn(scanner: Scanner, manager: EmployeeManager) {
@@ -51,14 +51,36 @@ fun handleCheckIn(scanner: Scanner, manager: EmployeeManager) {
         return
     }
 
-    print("Enter Check-in DateTime (yyyy-MM-dd HH:mm): ")
+    print("Enter Check-in DateTime (yyyy-MM-dd HH:mm) or press Enter for current: ")
     val dtStr = scanner.nextLine().trim()
-    try {
-        val dt = LocalDateTime.parse(dtStr, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-        println(manager.checkIn(id, dt))
+    val dt = if (dtStr.isEmpty()) {
+        LocalDateTime.now()
+    } else {
+        try {
+            LocalDateTime.parse(dtStr, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+        } catch (_: DateTimeException) {
+            println("Invalid datetime format.")
+            return
+        }
+    }
+    println(manager.checkIn(id, dt))
+}
+
+fun handleDeleteAttendanceLog(scanner: Scanner, manager: EmployeeManager) {
+    print("Enter Employee ID: ")
+    val id = scanner.nextLine().trim()
+
+    print("Enter Check-in DateTime of the log to delete (yyyy-MM-dd HH:mm): ")
+    val dtStr = scanner.nextLine().trim()
+    val checkIn = try {
+        LocalDateTime.parse(dtStr, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
     } catch (_: DateTimeException) {
         println("Invalid datetime format.")
+        return
     }
+
+    val result = manager.deleteAttendanceLog(id,checkIn)
+    println(result)
 }
 
 fun handleCheckOut(scanner: Scanner, manager: EmployeeManager) {
@@ -69,25 +91,35 @@ fun handleCheckOut(scanner: Scanner, manager: EmployeeManager) {
         return
     }
 
-    print("Enter Check-out DateTime (yyyy-MM-dd HH:mm): ")
+    print("Enter Check-out DateTime (yyyy-MM-dd HH:mm) or press Enter for current: ")
     val dtStr = scanner.nextLine().trim()
-    try {
-        val dt = LocalDateTime.parse(dtStr, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-        println(manager.checkOut(id, dt))
-    } catch (_: DateTimeException) {
-        println("Invalid datetime format.")
+    val dt = if (dtStr.isEmpty()) {
+        LocalDateTime.now()
+    } else {
+        try {
+            LocalDateTime.parse(dtStr, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+        } catch (_: DateTimeException) {
+            println("Invalid datetime format.")
+            return
+        }
     }
+    println(manager.checkOut(id, dt))
 }
 
 fun printAttendanceLog(scanner: Scanner, manager: EmployeeManager) {
     print("Enter date to view log (yyyy-MM-dd): ")
     val dateStr = scanner.nextLine().trim()
-    try {
-        val date = LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-        println(manager.printLog(date))
-    } catch (_: DateTimeException) {
-        println("Invalid date.")
+    val date = if (dateStr.isEmpty()) {
+        LocalDate.now()
+    } else {
+        try {
+            LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        } catch (_: DateTimeException) {
+            println("Invalid date.")
+            return
+        }
     }
+    println(manager.printLog(date))
 }
 
 fun showWorkingHoursSummary(scanner: Scanner, manager: EmployeeManager) {
@@ -102,16 +134,6 @@ fun showWorkingHoursSummary(scanner: Scanner, manager: EmployeeManager) {
     } catch (_: DateTimeException) {
         println("Invalid date format.")
     }
-}
-
-fun handleUpdateEmployee(scanner: Scanner, manager: EmployeeManager) {
-    print("Enter Employee ID to update: ")
-    val id = scanner.nextLine().trim()
-    if (id.isEmpty()) {
-        println("Employee ID cannot be empty.")
-        return
-    }
-    println(manager.updateEmployee(id, scanner))
 }
 
 fun handleDeleteEmployee(scanner: Scanner, manager: EmployeeManager) {
@@ -142,11 +164,11 @@ fun main() {
              3. Check-in
              4. Check-out
              5. Print Attendance Log
-             6. Update Employees
-             7. Delete Employees
-             8. List of Employees Currently CheckedIn 
-             9. Working Hours Summary
-            10. Exit
+             6. Delete Employees
+             7. List of Employees Currently CheckedIn 
+             8. Working Hours Summary
+             9. Delete Attendance Log
+             10. Exit
         """.trimMargin()
         )
         print("Choose option: ")
@@ -156,11 +178,10 @@ fun main() {
             "3" -> handleCheckIn(scanner, manager)
             "4" -> handleCheckOut(scanner, manager)
             "5" -> printAttendanceLog(scanner, manager)
-            "6" -> handleUpdateEmployee(scanner, manager)
-            "7" -> handleDeleteEmployee(scanner, manager)
-            "8" -> handleListCurrentlyCheckedIn(manager)
-            "9" -> showWorkingHoursSummary(scanner, manager)
-            "10" -> break
+            "6" -> handleDeleteEmployee(scanner, manager)
+            "7" -> handleListCurrentlyCheckedIn(manager)
+            "8" -> showWorkingHoursSummary(scanner, manager)
+            "9" -> handleDeleteAttendanceLog(scanner, manager)
             else -> println("Invalid choice.")
         }
     }

@@ -13,12 +13,18 @@ class Employee(
     var department: Department,
     var reportingTo: String
 ) {
-    var id: String = generateId()
-
+    var id: String = ""
+    companion object {
+        private var counter = 1
+    }
     fun validate(): Boolean {
-        return firstName.isNotBlank() &&
+        val isValid= firstName.isNotBlank() &&
                 lastName.isNotBlank() &&
                 (reportingTo == "0" || Regex("^E\\d{3}$").matches(reportingTo))
+        if(isValid){
+            id="E" + counter++.toString().padStart(3, '0')
+        }
+        return isValid
     }
 
     fun getValidationError(): String {
@@ -32,10 +38,5 @@ class Employee(
 
     override fun toString(): String {
         return "ID: $id  Name: $firstName $lastName  Role: $role  Dept: $department  Reports To: $reportingTo"
-    }
-
-    companion object {
-        private var counter = 1
-        private fun generateId(): String = "E" + counter++.toString().padStart(3, '0')
     }
 }

@@ -1,7 +1,6 @@
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.Scanner
 
 class EmployeeManager {
     private val employeeList = EmployeeList()
@@ -32,7 +31,7 @@ class EmployeeManager {
             return "Invalid employee ID."
         }
         val att = Attendance(id, time)
-        val error = att.isValidCheckIn(attendanceList)
+        val error = attendanceList.isValidCheckIn(att)
         return if (error.isNotEmpty()) error
         else {
             attendanceList.add(att)
@@ -44,70 +43,47 @@ class EmployeeManager {
         if (employeeList.none { it.id == id }) {
             return "Invalid employee ID."
         }
-        val att = Attendance(id, time)
-        att.checkOut = time
-        val error = att.isValidCheckOut(attendanceList)
+
+        val (error, attendance) = attendanceList.validateCheckOut(id, time)
         if (error.isNotEmpty()) {
             return "Check-out failed: $error"
         }
-        val existing = attendanceList.findLast {
-            it.employeeId == id &&
-                    it.checkIn.toLocalDate() == time.toLocalDate() &&
-                    it.checkOut == null
-        }
-        existing?.checkOut = time
-        return "Checked out at ${time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))}"
+
+        return attendance!!.checkout(time)
     }
 
+ //to string can I write call here from attendance class
     fun printLog(date: LocalDate): String {
         val found = attendanceList.filter { it.checkIn.toLocalDate() == date }
         return if (found.isEmpty()) "No logs for $date"
         else found.joinToString("\n") { it.toString() }
     }
 
-    fun updateEmployee(id: String, scanner: Scanner): String {
-        val emp = employeeList.find { it.id == id } ?: return "Employee ID not found."
-
-        print("Enter new First Name: ")
-        val fn = scanner.nextLine()
-
-        print("Enter new Last Name: ")
-        val ln = scanner.nextLine()
-
-        println("Select Role:")
-        Role.entries.forEachIndexed { index, role -> println("${index + 1}. $role") }
-        val rIdx = scanner.nextLine().toIntOrNull()?.minus(1)
-        val role = rIdx?.let { Role.entries.getOrNull(it) } ?: return "Invalid role selected."
-
-        println("Select Department:")
-        Department.entries.forEachIndexed { index, dept -> println("${index + 1}. $dept") }
-        val dIdx = scanner.nextLine().toIntOrNull()?.minus(1)
-        val dept = dIdx?.let { Department.entries.getOrNull(it) } ?: return "Invalid department selected."
-
-        print("Enter new Reporting Manager ID: ")
-        val reportingTo = scanner.nextLine()
-
-        emp.firstName = fn
-        emp.lastName = ln
-        emp.role = role
-        emp.department = dept
-        emp.reportingTo = reportingTo
-
-        return "Employee updated successfully."
-    }
 
     fun deleteEmployee(id: String): String {
-        val emp = employeeList.find { it.id == id } ?: return "Employee ID not found."
-        employeeList.remove(emp)
-        return "Employee deleted successfully."
+        return if (employeeList.delete(id)) "Employee deleted."
+        else "Employee not found."
     }
+
+    fun deleteAttendanceLog(employeeId: String, checkIn: LocalDateTime): String {
+        val log = attendanceList.find {
+            it.employeeId == employeeId && it.checkIn == checkIn
+        } ?: return "No matching attendance log found."
+
+        return if (attendanceList.delete(log)) {
+            "Attendance log deleted successfully."
+        } else {
+            "Failed to delete attendance log."
+        }
+    }
+
 
     fun listCurrentlyCheckedInEmployees(): String {
         val pending = attendanceList.filter { it.checkOut == null }
         return if (pending.isEmpty()) "No employees are currently checked-in."
         else "Currently checked-in employees:\n" + pending.joinToString("\n") { it.toString() }
     }
-
+    //must be in attendance list
     fun workingHoursSummary(startDate: LocalDate, endDate: LocalDate): String {
         if (startDate.isAfter(endDate)) {
             return "Start date cannot be after end date."
@@ -165,7 +141,6 @@ class EmployeeManager {
             }
         }
 
-        messages.add("Sample employees preloaded.")
         return messages.joinToString("\n")
     }
 }
