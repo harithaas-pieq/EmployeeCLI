@@ -1,6 +1,7 @@
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.time.Duration
 
 class EmployeeManager {
     private val employeeList = EmployeeList()
@@ -52,13 +53,11 @@ class EmployeeManager {
         return attendance!!.checkout(time)
     }
 
- //to string can I write call here from attendance class
     fun printLog(date: LocalDate): String {
         val found = attendanceList.filter { it.checkIn.toLocalDate() == date }
         return if (found.isEmpty()) "No logs for $date"
         else found.joinToString("\n") { it.toString() }
     }
-
 
     fun deleteEmployee(id: String): String {
         return if (employeeList.delete(id)) "Employee deleted."
@@ -77,33 +76,17 @@ class EmployeeManager {
         }
     }
 
-
     fun listCurrentlyCheckedInEmployees(): String {
         val pending = attendanceList.filter { it.checkOut == null }
         return if (pending.isEmpty()) "No employees are currently checked-in."
         else "Currently checked-in employees:\n" + pending.joinToString("\n") { it.toString() }
     }
-    //must be in attendance list
+
     fun workingHoursSummary(startDate: LocalDate, endDate: LocalDate): String {
-        if (startDate.isAfter(endDate)) {
-            return "Start date cannot be after end date."
-        }
-
-        val filtered = attendanceList.filter {
-            it.checkIn.toLocalDate() in startDate..endDate && it.checkOut != null
-        }
-
-        if (filtered.isEmpty()) {
+        val summary = attendanceList.getWorkingHoursSummary(startDate, endDate)
+        if (summary.isEmpty()) {
             return "No attendance records found in this date range."
         }
-
-        val summary = mutableMapOf<String, Long>()
-
-        for (record in filtered) {
-            val duration = java.time.Duration.between(record.checkIn, record.checkOut)
-            summary[record.employeeId] = summary.getOrDefault(record.employeeId, 0L) + duration.toMinutes()
-        }
-
         val result = StringBuilder("Working Hours Summary from $startDate to $endDate:\n")
         summary.forEach { (id, totalMinutes) ->
             val emp = employeeList.find { it.id == id }
@@ -112,7 +95,6 @@ class EmployeeManager {
             val name = emp?.let { "${it.firstName} ${it.lastName}" } ?: "Unknown"
             result.append("ID: $id | Name: $name | Worked: ${hours}h ${mins}m\n")
         }
-
         return result.toString().trim()
     }
 

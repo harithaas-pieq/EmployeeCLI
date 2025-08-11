@@ -15,13 +15,13 @@ class Employee(
 ) {
     var id: String = ""
     companion object {
-        private var counter = 1
+        private var counter = 2
     }
     fun validate(): Boolean {
         val isValid= firstName.isNotBlank() &&
                 lastName.isNotBlank() &&
                 (reportingTo == "0" || Regex("^E\\d{3}$").matches(reportingTo))
-        if(isValid){
+        if(isValid && id.isEmpty()){
             id="E" + counter++.toString().padStart(3, '0')
         }
         return isValid
